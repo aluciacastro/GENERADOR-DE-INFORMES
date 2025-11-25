@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "BACKEND/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "BACKEND/app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "FRONTEND/$1"
+    }
+  ]
+}
