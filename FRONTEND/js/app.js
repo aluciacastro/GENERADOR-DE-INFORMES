@@ -17,6 +17,7 @@ const loadedCount = document.getElementById('loadedCount');
 const generatedCount = document.getElementById('generatedCount');
 const generateBtn = document.getElementById('generateBtn');
 const clearBtn = document.getElementById('clearBtn');
+const downloadAllBtn = document.getElementById('downloadAllBtn');
 
 // ===================================
 // FILE INPUTS
@@ -107,11 +108,16 @@ function updateDownloadLinks() {
             <p class="empty-text">Sin documentos generados</p>
             <p class="empty-hint">Genera informes para verlos aquí</p>
         `;
+        // Ocultar botón de descargar todos
+        downloadAllBtn.style.display = 'none';
         return;
     }
 
     downloadLinksDiv.classList.remove('empty-state');
     downloadLinksDiv.innerHTML = '';
+    
+    // Mostrar botón de descargar todos
+    downloadAllBtn.style.display = 'flex';
 
     generatedFiles.forEach((file, index) => {
         const downloadItem = document.createElement('div');
@@ -324,6 +330,54 @@ function downloadFile(index) {
     document.body.removeChild(a);
 }
 
+/**
+ * Descarga todos los archivos generados
+ */
+async function downloadAllFiles() {
+    if (generatedFiles.length === 0) {
+        alert('No hay documentos para descargar');
+        return;
+    }
+
+    // Agregar clase de descarga
+    downloadAllBtn.classList.add('downloading');
+
+    try {
+        // Descargar cada archivo con un pequeño delay
+        for (let i = 0; i < generatedFiles.length; i++) {
+            const file = generatedFiles[i];
+            
+            // Crear URL temporal
+            const url = window.URL.createObjectURL(file.blob);
+            
+            // Crear enlace temporal
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Limpiar
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Pequeño delay entre descargas (300ms)
+            if (i < generatedFiles.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        }
+        
+        console.log(`✅ ${generatedFiles.length} archivo(s) descargado(s)`);
+        
+    } catch (error) {
+        console.error('Error descargando archivos:', error);
+        alert('Error al descargar algunos archivos');
+    } finally {
+        // Quitar clase de descarga
+        downloadAllBtn.classList.remove('downloading');
+    }
+}
+
 // ===================================
 // RESET Y LIMPIEZA
 // ===================================
@@ -397,6 +451,7 @@ async function checkAPIHealth() {
 function initializeEventListeners() {
     uploadForm.addEventListener('submit', handleFormSubmit);
     clearBtn.addEventListener('click', clearAll);
+    downloadAllBtn.addEventListener('click', downloadAllFiles);
 }
 
 // ===================================
