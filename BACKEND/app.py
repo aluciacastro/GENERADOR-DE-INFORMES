@@ -1,6 +1,7 @@
 """
 API Flask para generador de informes ICBF
 Backend RESTful para la aplicación web
+Adaptado para Vercel Serverless
 """
 
 from flask import Flask, request, jsonify, send_file
@@ -9,6 +10,10 @@ from werkzeug.utils import secure_filename
 import os
 import tempfile
 from datetime import datetime
+import sys
+
+# Agregar el directorio del generador al path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'generador'))
 
 from generador import generar_informe_word
 from generador.utils import extraer_nombre_uds, generar_nombre_salida
@@ -21,8 +26,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-# Directorio temporal para archivos
-TEMP_DIR = tempfile.gettempdir()
+# Usar /tmp en Vercel (único directorio escribible)
+TEMP_DIR = '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
 
 
 def allowed_file(filename, allowed_extensions):
@@ -48,7 +53,8 @@ def health():
     """Endpoint de salud del servicio"""
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'temp_dir': TEMP_DIR
     })
 
 
@@ -66,6 +72,7 @@ def generate_report():
     Returns:
         Archivo .docx generado
     """
+    temp_work_dir = None
     try:
         # Validar que se envió el archivo Excel
         if 'excel_file' not in request.files:
@@ -80,7 +87,7 @@ def generate_report():
             return jsonify({'error': 'Formato de archivo no válido. Use .xlsx o .xls'}), 400
         
         # Crear directorio temporal único para este request
-        temp_work_dir = tempfile.mkdtemp()
+        temp_work_dir = tempfile.mkdtemp(dir=TEMP_DIR)
         
         # Guardar archivo Excel
         excel_filename = secure_filename(excel_file.filename)
@@ -119,20 +126,37 @@ def generate_report():
             directorio_trabajo=temp_work_dir
         )
         
-        # Enviar el archivo generado
+        # Leer el archivo generado en memoria
+        with open(output_path, 'rb') as f:
+            file_data = f.read()
+        
+        # Limpiar archivos temporales
+        import shutil
+        if temp_work_dir and os.path.exists(temp_work_dir):
+            shutil.rmtree(temp_work_dir)
+        
+        # Crear respuesta con el archivo en memoria
+        from io import BytesIO
+        file_stream = BytesIO(file_data)
+        file_stream.seek(0)
+        
         response = send_file(
-            output_path,
+            file_stream,
             as_attachment=True,
             download_name=output_filename,
             mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
         
-        # Asegurar que el header Content-Disposition tenga el nombre correcto
         response.headers['Content-Disposition'] = f'attachment; filename="{output_filename}"'
         
         return response
         
     except Exception as e:
+        # Limpiar en caso de error
+        if temp_work_dir and os.path.exists(temp_work_dir):
+            import shutil
+            shutil.rmtree(temp_work_dir, ignore_errors=True)
+        
         print(f"Error al generar informe: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -147,6 +171,7 @@ def validate_file():
     Returns:
         Información sobre el archivo (número de columnas, respuestas, etc.)
     """
+    temp_path = None
     try:
         if 'excel_file' not in request.files:
             return jsonify({'error': 'No se envió el archivo Excel'}), 400
@@ -165,7 +190,8 @@ def validate_file():
         df = pd.read_excel(temp_path)
         
         # Limpiar archivo temporal
-        os.remove(temp_path)
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
         
         return jsonify({
             'valid': True,
@@ -176,9 +202,16 @@ def validate_file():
         })
         
     except Exception as e:
+        # Limpiar en caso de error
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
         return jsonify({'error': str(e)}), 500
 
 
+# Para desarrollo local
 if __name__ == '__main__':
-    # Modo desarrollo
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# Para Vercel serverless (IMPORTANTE)
+# Vercel busca una variable llamada 'app' o 'application'
+application = app
