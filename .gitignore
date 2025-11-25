@@ -1,0 +1,20 @@
+```
+# Entornos virtuales de Python
+BACKEND/venv/
+BACKEND/env/
+BACKEND/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Frontend
+FRONTEND/node_modules/
+FRONTEND/dist/
+FRONTEND/build/
+FRONTEND/.env.local
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+*.log
