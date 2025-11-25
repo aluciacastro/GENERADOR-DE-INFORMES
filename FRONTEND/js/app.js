@@ -2,10 +2,7 @@
 // CONFIGURACIÓN
 // ===================================
 
-// Detectar si estamos en producción o desarrollo
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000/api'
-    : '/api'; // En Vercel, usar rutas relativas
+const API_URL = 'http://localhost:5000/api';
 
 // Estado de la aplicación
 let selectedFiles = [];
@@ -165,7 +162,7 @@ async function handleFormSubmit(e) {
     // Verificar que el backend esté disponible
     const isHealthy = await checkAPIHealth();
     if (!isHealthy) {
-        alert('El servidor backend no está disponible en este momento. Por favor intenta más tarde.');
+        alert('El servidor backend no está disponible. Asegúrate de que esté corriendo en http://localhost:5000');
         return;
     }
 
@@ -287,7 +284,7 @@ async function handleFormSubmit(e) {
                 alert(`¡${generatedFiles.length} informe(s) generado(s) exitosamente!`);
             }
         } else {
-            alert('No se pudo generar ningún informe. Por favor verifica que los archivos sean válidos.');
+            alert('No se pudo generar ningún informe. Verifica que el backend esté corriendo y los archivos sean válidos.');
         }
 
     } catch (error) {
@@ -407,18 +404,13 @@ function initializeEventListeners() {
 // ===================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log(`🚀 Modo: ${window.location.hostname === 'localhost' ? 'Desarrollo' : 'Producción'}`);
-    console.log(`📡 API URL: ${API_URL}`);
-    
     initializeFileInputs();
     initializeEventListeners();
     
     // Verificar API al cargar
     checkAPIHealth().then(isHealthy => {
         if (!isHealthy) {
-            console.warn('⚠️ Advertencia: Backend no disponible.');
-        } else {
-            console.log('✅ Backend disponible y funcionando');
+            console.warn('⚠️ Advertencia: Backend no disponible. Inicia el servidor backend antes de usar la aplicación.');
         }
     });
 });

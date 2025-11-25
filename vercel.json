@@ -1,12 +1,17 @@
 {
   "version": 2,
+  "public": true,
   "builds": [
     {
       "src": "BACKEND/app.py",
       "use": "@vercel/python"
     },
     {
-      "src": "FRONTEND/**",
+      "src": "FRONTEND/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "FRONTEND/(.*)",
       "use": "@vercel/static"
     }
   ],
@@ -19,8 +24,5 @@
       "src": "/(.*)",
       "dest": "FRONTEND/$1"
     }
-  ],
-  "env": {
-    "FLASK_ENV": "production"
-  }
+  ]
 }
