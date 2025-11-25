@@ -2,7 +2,8 @@
 // CONFIGURACIÓN
 // ===================================
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = '/api';
+
 
 // Estado de la aplicación
 let selectedFiles = [];
@@ -162,7 +163,7 @@ async function handleFormSubmit(e) {
     // Verificar que el backend esté disponible
     const isHealthy = await checkAPIHealth();
     if (!isHealthy) {
-        alert('El servidor backend no está disponible. Asegúrate de que esté corriendo en http://localhost:5000');
+        alert('El servidor backend no está disponible. Intenta de nuevo.');
         return;
     }
 
